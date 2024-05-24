@@ -10,6 +10,8 @@ public class Post {
     @GeneratedValue
     private int id;
     private String description;
+    //means here we are telling that fetch type should be lazy means when we fetch post
+    //user details will not be fetched.
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
     private User user;

@@ -18,6 +18,8 @@ public class User {
     private String name;
     private LocalDate birthday;
     @OneToMany(mappedBy = "user")
+    //here we are telling spring to map this attribute to the 'user' attribute present int Post class.
+    //and relation is one to many means one user can have many post.
     private List<Post> posts;
 
     public void setPosts(List<Post> posts) {
