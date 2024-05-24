@@ -1,7 +1,10 @@
 package com.koushal.RestfulAPI.restfullapi.controllers;
 
 
+import com.koushal.RestfulAPI.restfullapi.Repository.PostRepository;
+import com.koushal.RestfulAPI.restfullapi.Repository.UserRepository;
 import com.koushal.RestfulAPI.restfullapi.dao.UserDaoService;
+import com.koushal.RestfulAPI.restfullapi.data.Post;
 import com.koushal.RestfulAPI.restfullapi.data.User;
 import com.koushal.RestfulAPI.restfullapi.exceptions.UserNotFoundException;
 import org.aspectj.bridge.Message;
@@ -19,22 +22,24 @@ import java.util.Locale;
 
 @RestController
 public class UserController {
-    UserDaoService userDaoService;
+    UserRepository userRepository;
     MessageSource messageSource;
+    PostRepository postRepository;
 
-    public UserController(UserDaoService userDaoService,MessageSource messageSource){
-        this.userDaoService=userDaoService;
+    public UserController(UserRepository userRepository,MessageSource messageSource,PostRepository postRepository ){
+        this.userRepository=userRepository;
         this.messageSource=messageSource;
+        this.postRepository=postRepository;
     }
 
     @GetMapping(path = "/users")
     public List<User> getAllUsers(){
-        return userDaoService.findAll();
+        return userRepository.findAll();
     }
 
     @GetMapping(path = "/users/{id}")
     public EntityModel<User> getUserById(@PathVariable int id){
-        User user=userDaoService.findById(id);
+        User user=userRepository.findById(id);
         if(user==null) throw new UserNotFoundException("User not found with id = "+id);
         EntityModel<User> entityModel=EntityModel.of(user);
         WebMvcLinkBuilder linkBuilder=WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllUsers());
@@ -44,13 +49,13 @@ public class UserController {
 
     @DeleteMapping(path = "/users/{id}")
     public void deleteUserById(@PathVariable int id){
-        userDaoService.removeById(id);
+        userRepository.deleteById(id);
     }
 
     @PostMapping(path = "/users")
     //Here user should be sent in request body and it should be same as User class
     public ResponseEntity<User> saveUser(@RequestBody User user){
-        User createdUser=userDaoService.addUser(user);
+        User createdUser=userRepository.save(user);
         //In place of hard coding URL here we are getting current POST request URL
         //and adding id to it.
         URI location= ServletUriComponentsBuilder.fromCurrentRequest()
@@ -61,9 +66,23 @@ public class UserController {
         return ResponseEntity.created(location).build();
     }
 
+    @GetMapping(path = "/users/{id}/posts")
+    public List<Post> getPostsByUserId(@PathVariable int id){
+        User user=userRepository.findById(id);
+        if(user==null) throw new UserNotFoundException("User not found with id = "+id);
+        return user.getPosts();
+    }
+
     @GetMapping(path = "/good-morning-internalization")
     public String goodMorningMessageInternationalization(){
         Locale locale= LocaleContextHolder.getLocale();
         return messageSource.getMessage("good.morning.message",null,"default message",locale);
+    }
+
+    @PostMapping(path = "/users/{id}/posts")
+    public void setPostForUser(@RequestBody Post post,@PathVariable int id){
+        User user=userRepository.findById(id);
+        post.setUser(user);
+        postRepository.save(post);
     }
 }
